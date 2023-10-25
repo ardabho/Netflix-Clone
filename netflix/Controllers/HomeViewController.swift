@@ -7,8 +7,18 @@
 
 import UIKit
 
-class HomeViewController: UIViewController {
+enum Sections: Int {
+    case TrendingMovies = 0
+    case TrendingTv = 1
+    case Popular = 2
+    case Upcoming = 3
+    case TopRated = 4
+}
 
+class HomeViewController: UIViewController {
+    
+    let sectionTitles: [String] = ["TRENDING MOVIES", "TRENDING TV", "POPULAR" , "UPCOMING MOVIES", "TOP RATED"]
+    
     private let homeFeedTable: UITableView = {
         let table = UITableView(frame: .zero, style: .grouped)
         table.register(CollectionViewTableViewCell.self , forCellReuseIdentifier: CollectionViewTableViewCell.identifier)
@@ -23,7 +33,31 @@ class HomeViewController: UIViewController {
         homeFeedTable.delegate = self
         homeFeedTable.dataSource = self
         
+        configureNavbar()
         homeFeedTable.tableHeaderView = HeroHeaderUIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 450))
+    }
+    
+    private func configureNavbar() {
+        
+        let netflixButton = UIButton(type: .custom)
+        netflixButton.setImage(UIImage(named: "netflixLogo"), for: .normal)
+        
+        let leftBarButtonItem = UIBarButtonItem(customView: netflixButton)
+        
+        let buttonWidth = leftBarButtonItem.customView?.widthAnchor.constraint(equalToConstant: 35)
+        let buttonHeight = leftBarButtonItem.customView?.heightAnchor.constraint(equalToConstant: 35)
+        buttonWidth?.isActive = true
+        buttonHeight?.isActive = true
+        
+        navigationItem.leftBarButtonItem = leftBarButtonItem
+        
+        navigationItem.rightBarButtonItems = [
+            UIBarButtonItem(image: UIImage(systemName: "person"), style: .done, target: self, action: .none),
+            
+            UIBarButtonItem(image: UIImage(systemName: "play.rectangle"), style: .done, target: self, action: .none)
+        ]
+        
+        
     }
     
     override func viewDidLayoutSubviews() {
@@ -31,12 +65,12 @@ class HomeViewController: UIViewController {
         homeFeedTable.frame = view.bounds
         
     }
-
+    
 }
 
 extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     func numberOfSections(in tableView: UITableView) -> Int {
-        return 20
+        return sectionTitles.count
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -47,6 +81,62 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: CollectionViewTableViewCell.identifier, for: indexPath) as? CollectionViewTableViewCell else {
             return UITableViewCell()
         }
+        
+        switch indexPath.section {
+        case Sections.TrendingMovies.rawValue:
+            APICaller.shared.getTrendingMovies { result in
+                switch result {
+                case .success(let titles):
+                    cell.configure(with: titles)
+                case .failure(let error):
+                    print(error.localizedDescription)
+                }
+            }
+            
+        case Sections.TrendingTv.rawValue:
+            APICaller.shared.getTrendingTV { result in
+                switch result {
+                case .success(let titles):
+                    cell.configure(with: titles)
+                case .failure(let error):
+                    print(error.localizedDescription)
+                }
+            }
+            
+        case Sections.Popular.rawValue:
+            APICaller.shared.getPopularMovies { result in
+                switch result {
+                case .success(let titles):
+                    cell.configure(with: titles)
+                case .failure(let error):
+                    print(error.localizedDescription)
+                }
+            }
+            
+        case Sections.Upcoming.rawValue:
+            APICaller.shared.getUpcomingMovies { result in
+                switch result {
+                case .success(let titles):
+                    cell.configure(with: titles)
+                case .failure(let error):
+                    print(error.localizedDescription)
+                }
+            }
+            
+        case Sections.TopRated.rawValue:
+            APICaller.shared.getTopRatedMovies { result in
+                switch result {
+                case .success(let titles):
+                    cell.configure(with: titles)
+                case .failure(let error):
+                    print(error.localizedDescription)
+                }
+            }
+            
+        default:
+            return UITableViewCell()
+            
+        }
         return cell
     }
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
@@ -56,9 +146,27 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         return 40
     }
     
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        return sectionTitles[section]
+    }
+    
+    func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {
+        guard let header = view as? UITableViewHeaderFooterView else {return}
+        header.textLabel?.font = UIFont.boldSystemFont(ofSize: 20)
+        header.textLabel?.textColor = .white
+        header.textLabel?.text = header.textLabel?.text?.capitalizedFirstLetter()    }
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let defaultOffset = view.safeAreaInsets.top
+        let offset = scrollView.contentOffset.y + defaultOffset
+        
+        navigationController?.navigationBar.transform = .init(translationX: 0, y: min(0, -offset))
+    }
+    
     
 }
+

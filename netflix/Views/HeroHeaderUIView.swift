@@ -61,11 +61,6 @@ class HeroHeaderUIView: UIView {
             downloadButton.widthAnchor.constraint(equalToConstant: 100)
         ]
         
-        let minimumSpacingConstraint = playButton.trailingAnchor.constraint(lessThanOrEqualTo: downloadButton.leadingAnchor, constant: -20)
-        
-        
-
-        NSLayoutConstraint.activate([minimumSpacingConstraint])
         NSLayoutConstraint.activate(downloadButtonConstraints)
         NSLayoutConstraint.activate(playButtonConstraints)
     }
