@@ -8,11 +8,11 @@
 import UIKit
 
 class UpcomingViewController: UIViewController {
-
+    
     private var titles: [Title] = [Title]()
     
     private let upcomingTable: UITableView = {
-       let table = UITableView()
+        let table = UITableView()
         
         table.register(TitleTableViewCell.self, forCellReuseIdentifier: TitleTableViewCell.identifier)
         return table
@@ -49,7 +49,7 @@ class UpcomingViewController: UIViewController {
             }
         }
     }
-
+    
 }
 
 extension UpcomingViewController: UITableViewDelegate, UITableViewDataSource {
@@ -72,5 +72,25 @@ extension UpcomingViewController: UITableViewDelegate, UITableViewDataSource {
         180
     }
     
-    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        
+        let title = titles[indexPath.row]
+        guard let titleName = titles[indexPath.row].original_name ?? titles[indexPath.row].original_title else {
+            return
+        }
+        
+        APICaller.shared.getMovie(with: titleName) { [weak self] result in
+            switch result {
+            case .success(let videoElement):
+                DispatchQueue.main.async {
+                    let vc = TitlePreviewViewController()
+                    vc.configureVC(with: TitlePreviewViewModel(titleName: titleName, titleOverview: title.overview ?? "No Overview Available", youtubeView: videoElement))
+                    self?.navigationController?.pushViewController(vc, animated: true)
+                }
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        }
+    }
 }

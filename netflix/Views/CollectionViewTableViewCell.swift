@@ -7,9 +7,15 @@
 
 import UIKit
 
+protocol CollectionViewTableViewCellDelegate: AnyObject {
+    func collectionViewTableViewCellDidTapCell(_ cell: CollectionViewTableViewCell, viewModel: TitlePreviewViewModel)
+}
+
 class CollectionViewTableViewCell: UITableViewCell {
 
    static let identifier = "CollectionViewTableViewCell"
+    
+    weak var delegate: CollectionViewTableViewCellDelegate?
     
     private var titles: [Title] = [Title]()
     
@@ -49,6 +55,10 @@ class CollectionViewTableViewCell: UITableViewCell {
         }
     }
     
+    private func downloadTitleAt(indexPath: IndexPath) {
+        print("Downloading \(titles[indexPath.row].original_name ?? titles[indexPath.row].original_title ?? "No title provided")")
+    }
+    
 }
 
 extension CollectionViewTableViewCell: UICollectionViewDelegate, UICollectionViewDataSource {
@@ -66,6 +76,40 @@ extension CollectionViewTableViewCell: UICollectionViewDelegate, UICollectionVie
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return titles.count
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        collectionView.deselectItem(at: indexPath, animated: true)
+        
+        let title = titles[indexPath.row]
+        guard let titleName = title.original_title ?? title.original_name else {
+            return
+        }
+        
+        APICaller.shared.getMovie(with: titleName + " trailer") { [weak self] result in
+            switch result {
+            case .success(let videoElement):
+                guard let strongSelf = self else {
+                    return
+                    
+                }
+                let viewModel = TitlePreviewViewModel(titleName: titleName, titleOverview: title.overview ?? "no overview", youtubeView: videoElement)
+                strongSelf.delegate?.collectionViewTableViewCellDidTapCell(strongSelf, viewModel: viewModel)
+            case .failure(_):
+                print("failed to call get movie")
+            
+            }
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemsAt indexPaths: [IndexPath], point: CGPoint) -> UIContextMenuConfiguration? {
+        let config = UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
+            let downloadAction = UIAction(title: "Download", subtitle: nil, image: nil, identifier: nil, discoverabilityTitle: nil, state: .off) { _ in
+                self?.downloadTitleAt(indexPath: indexPaths.first!)
+            }
+            return UIMenu(title: "", image: nil, identifier: nil, options: .displayInline, children: [downloadAction])
+        }
+        return config
     }
     
 }
